@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Le jeu Télé-Marmotte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Un petit jeu de plateforme : la marmotte de Télé-Marmotte part en tournage dans les Alpes.">
+<meta name="theme-color" content="#16110d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=VT323&display=swap">
+<style>
+/* Un vieux téléviseur dans une pièce sombre : l'écran au centre, le meuble en bois autour,
+   les commandes tactiles dessous comme les boutons du poste. Thème sombre unique, choisi. */
+:root {
+  --room: #16110d;
+  --wood: #6b4528;
+  --wood-dk: #3e2614;
+  --wood-lt: #8e6038;
+  --bezel: #141110;
+  --osd: #f4f1e6;
+  --rec: #ff3b30;
+  --gold: #f5c842;
+  --label: #f1e4c4;
+  --ink: #2b1a10;
+  --btn-a: #d8432f;
+  --btn-b: #e9dcc0;
+  --font-logo: 'Bungee', 'Arial Black', Impact, sans-serif;
+  --font-osd: 'VT323', 'Lucida Console', 'Courier New', monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
+body {
+  background: var(--room);
+  color: var(--osd);
+  font-family: var(--font-osd);
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+#app {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 8px;
+}
+
+/* ---------- Le poste ---------- */
+#tv {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 14px 14px 9px;
+  border-radius: 20px;
+  background:
+    repeating-linear-gradient(92deg, transparent 0 7px, rgba(0,0,0,.06) 7px 9px),
+    linear-gradient(180deg, var(--wood-lt), var(--wood) 30%, var(--wood-dk));
+  box-shadow: 0 14px 30px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-logo); font-size: 11px; letter-spacing: .14em;
+  color: #e9cf9f;
+}
+.brand i { width: 7px; height: 7px; border-radius: 50%; background: var(--rec); box-shadow: 0 0 6px var(--rec); }
+#screen {
+  position: relative; overflow: hidden;
+  container-type: size;
+  background: #000;
+  border-radius: 14px / 18px;
+  box-shadow: 0 0 0 5px var(--bezel), 0 0 0 7px #000;
+}
+#cv {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+#screen::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,.13) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.42) 100%);
+}
+
+/* ---------- OSD du caméscope ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.osd {
+  font-family: var(--font-osd); line-height: 1;
+  font-size: max(15px, 6.4cqh);
+  color: var(--osd);
+  text-shadow: 1px 1px 0 #000, 0 0 3px rgba(0,0,0,.8);
+}
+.osd-l { position: absolute; left: 4cqw; top: 4.5cqh; display: flex; align-items: center; gap: .6em; }
+.rec { color: var(--rec); display: flex; align-items: center; gap: .25em; }
+.rec::before { content: ''; width: .5em; height: .5em; border-radius: 50%; background: var(--rec); animation: blink 1.2s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+#hearts { position: absolute; left: 4cqw; top: calc(5cqh + max(18px, 7.4cqh)); display: flex; gap: 1.2cqw; }
+.heart { width: max(14px, 5.4cqh); aspect-ratio: 9 / 8; background: var(--i-heart) center / 100% 100% no-repeat; image-rendering: pixelated; }
+.heart.off { background-image: var(--i-heart-off); }
+.osd-r { position: absolute; right: calc(4cqw + max(38px, 8cqw)); top: 4.5cqh; display: flex; align-items: center; gap: .7em; }
+.ico { display: inline-block; height: .8em; aspect-ratio: 1; background: var(--i-reel) center / contain no-repeat; image-rendering: pixelated; vertical-align: -.05em; margin-right: .2em; }
+#gold { display: inline-block; height: .6em; aspect-ratio: 14 / 8; background: var(--i-gold) center / contain no-repeat; image-rendering: pixelated; }
+#btn-pause {
+  pointer-events: auto; position: absolute; right: 3cqw; top: 3cqh;
+  width: max(38px, 8cqw); height: max(30px, 11cqh);
+  border: 1px solid rgba(255,255,255,.5); border-radius: 6px;
+  background: rgba(0,0,0,.35);
+  font-family: var(--font-osd); font-size: max(15px, 6cqh); color: var(--osd);
+}
+#corners {
+  position: absolute; inset: 3cqh 2.2cqw; pointer-events: none; z-index: 1;
+  --c: rgba(255,255,255,.5);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 5cqw 2px,
+    linear-gradient(var(--c), var(--c)) left top / 2px 8cqh,
+    linear-gradient(var(--c), var(--c)) right top / 5cqw 2px,
+    linear-gradient(var(--c), var(--c)) right top / 2px 8cqh,
+    linear-gradient(var(--c), var(--c)) left bottom / 5cqw 2px,
+    linear-gradient(var(--c), var(--c)) left bottom / 2px 8cqh,
+    linear-gradient(var(--c), var(--c)) right bottom / 5cqw 2px,
+    linear-gradient(var(--c), var(--c)) right bottom / 2px 8cqh;
+  background-repeat: no-repeat;
+}
+#hint {
+  position: absolute; left: 50%; top: 22cqh; transform: translateX(-50%); z-index: 3;
+  width: min(84cqw, 560px); box-sizing: border-box;
+  padding: .45em .8em .5em;
+  background: rgba(14,10,8,.78); border: 1px solid rgba(255,255,255,.3);
+  font-size: max(15px, 6cqh); line-height: 1.05; text-align: center;
+  pointer-events: none;
+}
+#hint b { color: var(--gold); font-weight: normal; letter-spacing: .08em; margin-right: .4em; }
+#flash {
+  position: absolute; left: 0; right: 0; top: 52%; z-index: 3; text-align: center;
+  font-family: var(--font-logo); font-size: max(13px, 6cqh); color: var(--gold);
+  text-shadow: 2px 2px 0 #000; pointer-events: none;
+}
+#flash.go { animation: pop 1.9s ease-out forwards; }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 12% { transform: scale(1.06); opacity: 1; } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- Écrans dans l'écran ---------- */
+.scr {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: max(6px, 3cqh);
+  padding: 4cqh 4cqw; box-sizing: border-box;
+  background: rgba(12,9,7,.5);
+  text-align: center;
+}
+.logo { margin: 0; display: flex; align-items: center; gap: .3em; font-family: var(--font-logo); font-weight: normal; font-size: max(22px, 11cqh); line-height: 1; color: var(--label); text-shadow: 3px 3px 0 var(--ink); }
+.logo span:first-child { font-size: .55em; color: #fff; background: var(--rec); padding: .18em .35em .12em; border-radius: .25em; text-shadow: none; box-shadow: 2px 2px 0 var(--ink); }
+.tag { margin: 0; font-size: max(15px, 6cqh); line-height: 1; text-shadow: 1px 1px 0 #000; }
+.tapes { display: flex; gap: 2.4cqw; }
+.tape {
+  position: relative; width: 27cqw; min-width: 96px; min-height: 18cqw;
+  padding: 1.3cqw 1.3cqw max(20px, 7cqw); border: 0; border-radius: 1.2cqw;
+  background: #232023; box-shadow: 0 .7cqw 0 #0b0a0b;
+  display: flex; flex-direction: column; text-align: left;
+}
+.tape::after {
+  content: ''; position: absolute; left: 22%; right: 22%; bottom: max(4px, 1.3cqw); height: max(13px, 4.6cqw);
+  border-radius: .7cqw; background: #0d0c0d;
+  background-image:
+    radial-gradient(circle at 26% 50%, #d6cfc0 0 22%, #3b383a 23% 34%, transparent 35%),
+    radial-gradient(circle at 74% 50%, #d6cfc0 0 22%, #3b383a 23% 34%, transparent 35%);
+}
+.lbl { display: flex; flex-direction: column; gap: .1em; padding: .3em .45em; background: var(--label); color: var(--ink); border-radius: .3cqw; line-height: .95; }
+.tape-n { font-size: max(12px, 4cqh); color: #8a4a20; }
+.tape-t { font-size: max(14px, 5.6cqh); }
+.tape-i { font-size: max(12px, 4cqh); opacity: .75; }
+.tape:hover:not(:disabled) { transform: translateY(-2px); }
+.tape:disabled { opacity: .42; cursor: not-allowed; }
+.row { display: flex; gap: 2.4cqw; flex-wrap: wrap; justify-content: center; }
+.btn {
+  min-height: 34px; padding: .25em .8em .3em;
+  font-size: max(16px, 6.4cqh); line-height: 1;
+  background: var(--label); color: var(--ink);
+  border: 0; border-radius: 6px; box-shadow: 0 3px 0 #8d7b55;
+}
+.btn.ghost { background: rgba(0,0,0,.35); color: var(--osd); border: 1px solid rgba(255,255,255,.45); box-shadow: none; }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #8d7b55; }
+.scr h2 { margin: 0; font-family: var(--font-logo); font-weight: normal; font-size: max(20px, 9cqh); line-height: 1; color: var(--gold); text-shadow: 3px 3px 0 #000; }
+.scr p { margin: 0; font-size: max(15px, 6cqh); line-height: 1.05; text-shadow: 1px 1px 0 #000; max-width: 80cqw; }
+#scr-coupez, #scr-win, #scr-pause { background: rgba(10,8,8,.72); }
+#scr-coupez h2 { color: #fff; letter-spacing: .06em; }
+#win-stats { margin: 0; display: grid; grid-template-columns: auto auto auto auto; gap: .1em 1em; font-size: max(15px, 5.8cqh); line-height: 1.05; text-align: left; }
+#win-stats dt { color: #d8cdb4; }
+#win-stats dd { margin: 0; color: var(--osd); }
+
+/* ---------- Commandes tactiles ---------- */
+#pad { display: flex; justify-content: space-between; align-items: center; gap: 16px; touch-action: none; }
+#dpad {
+  position: relative; width: 168px; height: 76px; border-radius: 38px;
+  background: linear-gradient(180deg, #2c2724, #1b1715);
+  box-shadow: 0 5px 0 #0b0908, inset 0 1px 0 rgba(255,255,255,.12);
+  touch-action: none;
+}
+#dpad::before, #dpad::after {
+  content: ''; position: absolute; top: 50%; width: 0; height: 0; margin-top: -14px;
+  border-top: 14px solid transparent; border-bottom: 14px solid transparent;
+  opacity: .8;
+}
+#dpad::before { left: 26px; border-right: 22px solid var(--label); }
+#dpad::after { right: 26px; border-left: 22px solid var(--label); }
+#dpad.l::before, #dpad.r::after { opacity: 1; filter: drop-shadow(0 0 6px var(--gold)); }
+#dpad.l { background: linear-gradient(90deg, #4a3d33, #1b1715 55%); }
+#dpad.r { background: linear-gradient(270deg, #4a3d33, #1b1715 55%); }
+#ab { display: flex; gap: 14px; align-items: flex-end; }
+.round {
+  width: 74px; height: 74px; border-radius: 50%; border: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: var(--font-logo); font-size: 22px; line-height: 1;
+  box-shadow: 0 5px 0 rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.3);
+  touch-action: none;
+}
+.round small { font-family: var(--font-osd); font-size: 15px; margin-top: 2px; }
+#bA { background: var(--btn-a); color: #fff; margin-bottom: 22px; }
+#bB { background: var(--btn-b); color: var(--ink); }
+.round.on { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.6); filter: brightness(1.15); }
+#keys { margin: 0; font-size: 18px; color: #b9a98c; text-align: center; }
+#keys kbd { font-family: inherit; color: var(--osd); border: 1px solid #6d5d48; border-radius: 4px; padding: 0 .3em; }
+
+/* ---------- Trois façons de tenir le jeu ---------- */
+.mode-desk #pad { display: none; }
+.mode-port #keys, .mode-land #keys { display: none; }
+.mode-port #pad { width: 100%; max-width: 440px; }
+.mode-land { gap: 0; padding-block: 0; }
+.mode-land #tv { padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.mode-land .brand { display: none; }
+.mode-land #screen { border-radius: 0; box-shadow: none; }
+.mode-land #pad {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; pointer-events: none;
+  padding: 0 max(18px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+}
+.mode-land #dpad, .mode-land .round { pointer-events: auto; opacity: .55; }
+.mode-land #dpad { width: 150px; height: 66px; }
+.mode-land .round { width: 64px; height: 64px; }
+.mode-land #bA { margin-bottom: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .rec::before { animation: none; }
+  #flash.go { animation-duration: .01s; animation-delay: 1.5s; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="tv">
+    <div id="screen">
+      <canvas id="cv" width="256" height="144" aria-label="Le jeu Télé-Marmotte"></canvas>
+      <div id="corners"></div>
+      <div id="hud" hidden>
+        <div class="osd osd-l"><span class="rec">REC</span><span id="clock">00:00</span></div>
+        <div id="hearts" aria-label="Vies"></div>
+        <div class="osd osd-r"><span id="gold" hidden title="Cassette dorée"></span><span><i class="ico"></i><span id="reels">0/0</span></span><span id="prise">PRISE 1</span></div>
+        <button id="btn-pause" aria-label="Pause">II</button>
+      </div>
+      <div id="hint" class="osd" hidden><b>CONSEIL</b><span id="hint-text"></span></div>
+      <div id="flash" hidden></div>
+
+      <section id="scr-title" class="scr">
+        <h1 class="logo"><span>Télé</span><span>Marmotte</span></h1>
+        <p class="tag">Choisis ta cassette.</p>
+        <div id="tapes" class="tapes"></div>
+        <div class="row">
+          <button class="btn ghost" data-toggle="sfx" id="tg-sfx">Bruitages : oui</button>
+          <button class="btn ghost" data-toggle="music" id="tg-music">Musique : oui</button>
+        </div>
+      </section>
+
+      <section id="scr-pause" class="scr" hidden>
+        <h2>Pause</h2>
+        <div class="row">
+          <button class="btn" id="btn-resume">Reprendre</button>
+          <button class="btn ghost" id="btn-restart">Recommencer</button>
+          <button class="btn ghost" id="btn-menu">Cassettes</button>
+        </div>
+        <div class="row">
+          <button class="btn ghost" data-toggle="sfx" id="tg-sfx2">Bruitages : oui</button>
+          <button class="btn ghost" data-toggle="music" id="tg-music2">Musique : oui</button>
+        </div>
+      </section>
+
+      <section id="scr-coupez" class="scr" hidden>
+        <h2>Coupez !</h2>
+        <p id="coupez-prise">On la refait.</p>
+      </section>
+
+      <section id="scr-win" class="scr" hidden>
+        <h2 id="win-title">C'est dans la boîte !</h2>
+        <p id="win-sub"></p>
+        <dl id="win-stats"></dl>
+        <div class="row">
+          <button class="btn" id="btn-next">Cassette suivante</button>
+          <button class="btn ghost" id="btn-again">Rejouer</button>
+          <button class="btn ghost" id="btn-menu2">Cassettes</button>
+        </div>
+      </section>
+    </div>
+    <div class="brand"><i></i>TÉLÉ-MARMOTTE</div>
+  </div>
+
+  <div id="pad">
+    <div id="dpad" role="group" aria-label="Gauche, droite"></div>
+    <div id="ab">
+      <button class="round" id="bB" aria-label="B, siffler">B<small>siffler</small></button>
+      <button class="round" id="bA" aria-label="A, sauter">A<small>sauter</small></button>
+    </div>
+  </div>
+  <p id="keys"><kbd>←</kbd> <kbd>→</kbd> courir · <kbd>Espace</kbd> sauter · <kbd>X</kbd> siffler · <kbd>Échap</kbd> pause</p>
+</div>
+<noscript>Ce jeu a besoin de JavaScript.</noscript>
+<script src="js/sprites.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/world.js"></script>
+<script src="js/game.js"></script>
+<script src="js/render.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
