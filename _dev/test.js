@@ -75,5 +75,24 @@
     ok('niveau ' + (i + 1) + ' « ' + lv.name + ' »', stuck === 0 && L.goal && L.hints.length === lv.hints.length,
       L.w + ' colonnes, ' + L.totalReels + ' bobines, ' + L.enemies.length + ' bêtes, ' + L.hints.length + ' panneaux / ' + lv.hints.length + ' conseils');
   });
+
+  // 11. Au doigt : elle va vers lui, saute quand il est au-dessus de sa tête, siffle du côté touché
+  D.start(0); G = D.G; D.run(40);
+  const sx = () => G.p.x + G.p.w / 2 - G.cam.x, sy = () => G.p.y - G.cam.y;
+  const hold = (dx, dy, n) => { for (let i = 0; i < n; i++) { D.finger(sx() + dx, sy() + dy); D.run(1); } };
+  let fx = G.p.x; hold(80, 20, 90);
+  ok('doigt loin devant : elle court', G.p.x - fx > 120 && G.p.vx > 1.9, (G.p.x - fx).toFixed(0) + ' px en 1,5 s');
+  D.finger(null); D.run(40); hold(15, 20, 60);
+  ok('doigt tout près : elle marche', G.p.vx > 0.5 && G.p.vx < 1.5, 'vitesse ' + G.p.vx.toFixed(2));
+  hold(2, 6, 40);
+  ok('doigt sur elle : elle s’arrête', G.p.vx === 0);
+  const gy = G.p.y; let fTop = G.p.y, hops = 0, wasG = true;
+  for (let i = 0; i < 120; i++) { hold(0, -30, 1); fTop = Math.min(fTop, G.p.y); if (wasG && !G.p.onGround) hops++; wasG = G.p.onGround; }
+  ok('doigt au-dessus de sa tête : saut long, répété', gy - fTop > 50 && hops >= 3, (gy - fTop).toFixed(1) + ' px, ' + hops + ' sauts en 2 s');
+  D.finger(null); D.run(80);
+  G.p.face = 1; D.tap(sx() - 60, sy()); D.run(1);
+  ok('touche brève à gauche : sifflet vers la gauche', G.p.face === -1 && G.waves.length === 1 && G.waves[0].vx < 0);
+  hold(80, 20, 30); D.finger(null); D.run(30);
+  ok('doigt levé : elle s’arrête', G.p.vx === 0);
   return out.join('\n');
 })();

@@ -16,14 +16,14 @@ Chaque cassette cache une cassette dorée.
 
 ## Commandes
 
-| | Téléphone | Clavier |
-|---|---|---|
-| Courir | croix gauche / droite | ← → (ou Q / D) |
-| Sauter (appui long = plus haut) | A | Espace, ↑ ou Z |
-| Siffler | B | X ou C |
-| Pause | bouton II | Échap |
+| | Au doigt (téléphone) | Boutons (réglage « Boutons : oui ») | Clavier |
+|---|---|---|---|
+| Courir | doigt posé devant ou derrière la marmotte (plus il est loin, plus elle court vite) | croix gauche / droite | ← → (ou Q / D) |
+| Sauter (appui long = plus haut) | doigt au-dessus de sa tête (laissé en haut : elle ressaute) | A | Espace, ↑ ou Z |
+| Siffler | touche brève du côté où siffler, ou un deuxième doigt | B | X ou C |
+| Pause | bouton II | bouton II | Échap |
 
-En portrait, le jeu s'affiche dans un petit téléviseur avec la manette dessous. En paysage, il passe en plein écran.
+Sur téléphone, on joue au doigt n'importe où sur la page ; la croix et les boutons A / B reviennent avec le réglage « Boutons : oui » (écran titre ou pause). En portrait, le jeu s'affiche dans un petit téléviseur ; en paysage, il passe en plein écran.
 
 ## Mettre le jeu sur un site
 

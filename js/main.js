@@ -7,7 +7,7 @@ window.TM = window.TM || {};
 
   // ---------- Sauvegarde (facultative : le jeu marche sans) ----------
   const SAVE_KEY = 'tele-marmotte-v1';
-  const save = { unlocked: 1, best: {}, sfx: true, music: true };
+  const save = { unlocked: 1, best: {}, sfx: true, music: true, buttons: false };
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); } catch (e) { /* stockage indisponible */ }
   function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* tant pis */ } }
   TM.audio.setSfx(save.sfx);
@@ -41,7 +41,7 @@ window.TM = window.TM || {};
     keys[k] = true;
   });
   addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
-  addEventListener('blur', () => { for (const k in keys) keys[k] = false; for (const k in touch) touch[k] = false; });
+  addEventListener('blur', () => { for (const k in keys) keys[k] = false; for (const k in touch) touch[k] = false; fingerId = null; finger = null; });
 
   function bindButton(el, name) {
     const down = e => {
@@ -82,6 +82,60 @@ window.TM = window.TM || {};
   dpad.addEventListener('pointerup', dpadEnd);
   dpad.addEventListener('pointercancel', dpadEnd);
   $('pad').addEventListener('contextmenu', e => e.preventDefault());
+
+  // Au doigt, n'importe où sur la page : la marmotte va vers le doigt (plus il est loin, plus elle court),
+  // saute quand il est au-dessus de sa tête, siffle du côté touché sur une touche brève ou un deuxième doigt
+  const NEAR = 10; // demi-largeur de la zone « sur la marmotte », en pixels du jeu
+  let fingerId = null, finger = null, fingerStart = null, fingerLive = false, whistleFace = 0;
+  function toGame(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * TM.VW, y: (e.clientY - r.top) / r.height * TM.VH };
+  }
+  function sideOf(pt) {
+    if (!G) return 0;
+    const dx = pt.x + G.cam.x - (G.p.x + G.p.w / 2);
+    return Math.abs(dx) < NEAR ? 0 : Math.sign(dx);
+  }
+  const app = $('app');
+  app.addEventListener('pointerdown', e => {
+    if (screen !== 'play' || paused || !G || (e.target.closest && e.target.closest('button, #pad'))) return;
+    e.preventDefault();
+    TM.audio.unlock();
+    if (fingerId !== null) { whistleEdge = true; whistleFace = sideOf(toGame(e)); return; } // un deuxième doigt = sifflet
+    fingerId = e.pointerId;
+    try { app.setPointerCapture(e.pointerId); } catch (err) { /* pas grave */ }
+    fingerStart = { x: e.clientX, y: e.clientY, t: performance.now() };
+    finger = toGame(e); fingerLive = false;
+  });
+  app.addEventListener('pointermove', e => {
+    if (e.pointerId !== fingerId) return;
+    finger = toGame(e);
+    if (Math.hypot(e.clientX - fingerStart.x, e.clientY - fingerStart.y) > 8) fingerLive = true;
+  });
+  function fingerUp(e) {
+    if (e.pointerId !== fingerId) return;
+    const moved = Math.hypot(e.clientX - fingerStart.x, e.clientY - fingerStart.y);
+    if (e.type === 'pointerup' && performance.now() - fingerStart.t < 220 && moved < 12) {
+      whistleEdge = true; whistleFace = sideOf(toGame(e));
+    }
+    fingerId = null; finger = null; fingerLive = false;
+  }
+  app.addEventListener('pointerup', fingerUp);
+  app.addEventListener('pointercancel', fingerUp);
+  // Ce que le doigt demande à cette image (il ne compte qu'après 130 ms ou dès qu'il glisse : une touche brève ne fait pas bouger)
+  function fingerInput() {
+    const f = { dir: 0, speed: 1, up: false };
+    if (!finger || !G || G.state !== 'play' || !(fingerLive || performance.now() - fingerStart.t > 130)) return f;
+    const p = G.p;
+    const dx = finger.x + G.cam.x - (p.x + p.w / 2);
+    if (Math.abs(dx) >= NEAR) {
+      f.dir = Math.sign(dx);
+      f.speed = Math.min(1, 0.4 + (Math.abs(dx) - NEAR) / 30);
+    }
+    f.up = finger.y + G.cam.y < p.y;
+    return f;
+  }
+
   document.addEventListener('touchmove', e => { if (e.target.closest && e.target.closest('#app')) e.preventDefault(); }, { passive: false });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
@@ -122,7 +176,7 @@ window.TM = window.TM || {};
   function syncToggles() {
     document.querySelectorAll('[data-toggle]').forEach(b => {
       const k = b.dataset.toggle;
-      b.textContent = (k === 'sfx' ? 'Bruitages : ' : 'Musique : ') + (save[k] ? 'oui' : 'non');
+      b.textContent = { sfx: 'Bruitages : ', music: 'Musique : ', buttons: 'Boutons : ' }[k] + (save[k] ? 'oui' : 'non');
       b.setAttribute('aria-pressed', save[k] ? 'true' : 'false');
     });
   }
@@ -130,7 +184,9 @@ window.TM = window.TM || {};
     TM.audio.unlock();
     const k = b.dataset.toggle;
     save[k] = !save[k];
-    if (k === 'sfx') TM.audio.setSfx(save.sfx); else TM.audio.setMusic(save.music);
+    if (k === 'sfx') TM.audio.setSfx(save.sfx);
+    else if (k === 'music') TM.audio.setMusic(save.music);
+    else layout();
     store(); syncToggles();
   }));
 
@@ -249,18 +305,23 @@ window.TM = window.TM || {};
       return;
     }
     if (paused || !G) return;
+    const f = fingerInput();
+    const left = keys.left || touch.left, right = keys.right || touch.right;
     const inp = {
-      left: keys.left || touch.left, right: keys.right || touch.right,
-      jump: keys.jump || touch.jump, whistle: keys.whistle || touch.whistle,
-      jumpPressed: jumpEdge, whistlePressed: whistleEdge
+      left: left || f.dir < 0, right: right || f.dir > 0,
+      speed: left || right ? 1 : f.speed,
+      jump: keys.jump || touch.jump || f.up, whistle: keys.whistle || touch.whistle,
+      jumpPressed: jumpEdge || f.up, // doigt resté en haut : elle ressaute en retombant
+      whistlePressed: whistleEdge, whistleFace: whistleFace
     };
-    jumpEdge = whistleEdge = false;
+    jumpEdge = whistleEdge = false; whistleFace = 0;
     TM.step(G, inp);
     for (const ev of G.events) {
       if (ev.type === 'hint') {
         if (ev.data !== hintIdx || $('hint').hidden) {
           hintIdx = ev.data;
-          $('hint-text').textContent = G.L.def.hints[ev.data] || '';
+          const touchHint = layoutMode !== 'desk' && !save.buttons && G.L.def.hintsTouch && G.L.def.hintsTouch[ev.data];
+          $('hint-text').textContent = touchHint || G.L.def.hints[ev.data] || '';
           $('hint').hidden = false;
           hintTimer = 330;
         } else hintTimer = Math.max(hintTimer, 150);
@@ -279,13 +340,13 @@ window.TM = window.TM || {};
   }
 
   // ---------- Mise en page ----------
+  let layoutMode = 'desk';
   function layout() {
     const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
     const coarse = matchMedia('(any-pointer: coarse)').matches;
     const portrait = vh > vw * 1.05;
-    const mode = !coarse ? 'desk' : portrait ? 'port' : 'land';
-    const app = $('app');
-    app.className = 'mode-' + mode;
+    const mode = layoutMode = !coarse ? 'desk' : portrait ? 'port' : 'land';
+    app.className = 'mode-' + mode + (save.buttons ? '' : ' nopad'); // sans boutons, on joue au doigt
     let w;
     if (mode === 'port') {
       w = Math.min(vw - 28, (vh * 0.52) * 16 / 9);
@@ -319,6 +380,12 @@ window.TM = window.TM || {};
 
   TM.debug = {
     get G() { return G; }, start: startLevel, keys: keys, save: save,
+    // doigt posé en (x, y), en pixels de l'écran du jeu ; null = doigt levé
+    finger: function (x, y) {
+      finger = x === null ? null : { x: x, y: y };
+      fingerStart = { x: 0, y: 0, t: 0 }; fingerLive = true;
+    },
+    tap: function (x, y) { whistleEdge = true; whistleFace = sideOf({ x: x, y: y }); },
     run: function (n) { for (let i = 0; i < n; i++) tick(); TM.render(g, G || demo); }
   };
   layout();

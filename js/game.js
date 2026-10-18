@@ -104,7 +104,7 @@ window.TM = window.TM || {};
     const onIce = p.onGround && p.groundTile === TM.TILE.ICE;
     const acc = p.onGround ? (onIce ? 0.06 : 0.24) : 0.16;
     const dec = p.onGround ? (onIce ? 0.015 : 0.28) : 0.05;
-    const max = 2.0;
+    const max = 2.0 * (inp.speed || 1); // au doigt : plus il est loin, plus elle court
     let dir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
     if (p.hurtT > 0) { p.hurtT--; dir = 0; }
     if (dir) {
@@ -127,6 +127,7 @@ window.TM = window.TM || {};
     if (p.wcd > 0) p.wcd--;
     if (p.wpose > 0) p.wpose--;
     if (inp.whistlePressed && p.wcd === 0) {
+      if (inp.whistleFace) p.face = inp.whistleFace; // touche brève : elle siffle du côté touché
       G.waves.push({ x: p.face > 0 ? p.x + p.w : p.x - 6, y: p.y + 4, vx: p.face * 3.2, age: 0, face: p.face });
       p.wcd = 26; p.wpose = 14;
       sfx('whistle');

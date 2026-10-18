@@ -178,6 +178,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .tape:hover:not(:disabled) { transform: translateY(-2px); }
 .tape:disabled { opacity: .42; cursor: not-allowed; }
 .row { display: flex; gap: 2.4cqw; flex-wrap: wrap; justify-content: center; }
+.toggles { flex-wrap: nowrap; gap: 1.6cqw; }
+.toggles .btn { min-height: 30px; padding: .2em .5em .25em; font-size: max(13px, 5.4cqh); white-space: nowrap; }
 .btn {
   min-height: 34px; padding: .25em .8em .3em;
   font-size: max(16px, 6.4cqh); line-height: 1;
@@ -230,6 +232,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* ---------- Trois façons de tenir le jeu ---------- */
 .mode-desk #pad { display: none; }
 .mode-port #keys, .mode-land #keys { display: none; }
+#fingers { display: none; margin: 0; font-size: 19px; line-height: 1.15; color: #b9a98c; text-align: center; }
+.nopad #pad { display: none; }
+.mode-port.nopad #fingers { display: block; }
+.mode-desk [data-toggle="buttons"] { display: none; }
 .mode-port #pad { width: 100%; max-width: 440px; }
 .mode-land { gap: 0; padding-block: 0; }
 .mode-land #tv { padding: 0; background: none; box-shadow: none; border-radius: 0; }
@@ -268,9 +274,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
         <h1 class="logo"><span>Télé</span><span>Marmotte</span></h1>
         <p class="tag">Choisis ta cassette.</p>
         <div id="tapes" class="tapes"></div>
-        <div class="row">
+        <div class="row toggles">
           <button class="btn ghost" data-toggle="sfx" id="tg-sfx">Bruitages : oui</button>
           <button class="btn ghost" data-toggle="music" id="tg-music">Musique : oui</button>
+          <button class="btn ghost" data-toggle="buttons" id="tg-buttons">Boutons : non</button>
         </div>
       </section>
 
@@ -281,9 +288,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
           <button class="btn ghost" id="btn-restart">Recommencer</button>
           <button class="btn ghost" id="btn-menu">Cassettes</button>
         </div>
-        <div class="row">
+        <div class="row toggles">
           <button class="btn ghost" data-toggle="sfx" id="tg-sfx2">Bruitages : oui</button>
           <button class="btn ghost" data-toggle="music" id="tg-music2">Musique : oui</button>
+          <button class="btn ghost" data-toggle="buttons" id="tg-buttons2">Boutons : non</button>
         </div>
       </section>
 
@@ -314,6 +322,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     </div>
   </div>
   <p id="keys"><kbd>←</kbd> <kbd>→</kbd> courir · <kbd>Espace</kbd> sauter · <kbd>X</kbd> siffler · <kbd>Échap</kbd> pause</p>
+  <p id="fingers">Doigt devant la marmotte : elle avance<br>Au-dessus de sa tête : elle saute<br>Touche brève : elle siffle</p>
 </div>
 <noscript>Ce jeu a besoin de JavaScript.</noscript>
 <script src="js/sprites.js"></script>

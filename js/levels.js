@@ -19,6 +19,11 @@ TM.LEVELS = [
       'Les aigles endormis restent en l’air. Rebondis dessus !',
       "La caméra t'attend au bout du pré. Moteur !"
     ],
+    // les mêmes, pour qui joue au doigt (sans les boutons)
+    hintsTouch: [
+      'Pose le doigt devant la marmotte pour avancer, au-dessus de sa tête pour sauter.',
+      "Un renard ! Une touche brève de son côté : la marmotte siffle et l'endort."
+    ],
     ground:
       '9999999999 9999999999 99999999.. .999999999 9999999999 ' +
       '9998888888 8888777777 77...77777 7777888999 9999999999 ' +
