@@ -16,14 +16,19 @@ Chaque cassette cache une cassette dorée.
 
 ## Commandes
 
-| | Au doigt (téléphone) | Boutons (réglage « Boutons : oui ») | Clavier |
+| | Au doigt (téléphone) | Boutons (téléphone) | Clavier |
 |---|---|---|---|
 | Courir | doigt posé devant ou derrière la marmotte (plus il est loin, plus elle court vite) | croix gauche / droite | ← → (ou Q / D) |
 | Sauter (appui long = plus haut) | doigt au-dessus de sa tête (laissé en haut : elle ressaute) | A | Espace, ↑ ou Z |
 | Siffler | touche brève du côté où siffler, ou un deuxième doigt | B | X ou C |
 | Pause | bouton II | bouton II | Échap |
 
-Sur téléphone, on joue au doigt n'importe où sur la page ; la croix et les boutons A / B reviennent avec le réglage « Boutons : oui » (écran titre ou pause). En portrait, le jeu s'affiche dans un petit téléviseur ; en paysage, il passe en plein écran.
+Sur téléphone, le doigt et les boutons marchent ensemble ; le réglage « Boutons : non » (écran titre ou pause) cache la croix et A / B pour ne jouer qu'au doigt.
+
+En portrait, le jeu s'affiche dans un petit téléviseur, avec le bouton « Jouer en plein écran » au-dessus. En paysage, il passe en plein écran. Le bouton (ou le réglage « Plein écran » du menu en paysage) fait :
+
+- sur Android : un vrai plein écran, verrouillé à l'horizontale ;
+- sur iPhone, qui ne permet ni l'un ni l'autre aux pages web : la page tournée d'un quart de tour tant que le téléphone est tenu droit. Il suffit de le tourner vers la gauche, même avec la rotation verrouillée.
 
 ## Mettre le jeu sur un site
 

@@ -7,7 +7,7 @@ window.TM = window.TM || {};
 
   // ---------- Sauvegarde (facultative : le jeu marche sans) ----------
   const SAVE_KEY = 'tele-marmotte-v1';
-  const save = { unlocked: 1, best: {}, sfx: true, music: true, buttons: false };
+  const save = { unlocked: 1, best: {}, sfx: true, music: true, pad: true }; // pad : croix et boutons A/B affichés
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); } catch (e) { /* stockage indisponible */ }
   function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* tant pis */ } }
   TM.audio.setSfx(save.sfx);
@@ -61,12 +61,21 @@ window.TM = window.TM || {};
   bindButton($('bA'), 'jump');
   bindButton($('bB'), 'whistle');
 
+  // Position d'un doigt dans un élément, en fractions de sa largeur et de sa hauteur
+  // (en plein écran tenu en portrait, la page est tournée d'un quart de tour : voir layout)
+  let rotated = false, big = false, fsOwned = false;
+  function local(e, el) {
+    const r = el.getBoundingClientRect();
+    return rotated
+      ? { x: (e.clientY - r.top) / r.height, y: (r.right - e.clientX) / r.width }
+      : { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+  }
+
   const dpad = $('dpad');
   let dpadId = null;
   function dpadSet(e) {
-    const r = dpad.getBoundingClientRect();
-    const dx = e.clientX - (r.left + r.width / 2);
-    const dead = r.width * 0.08;
+    const dx = (local(e, dpad).x - 0.5) * dpad.offsetWidth;
+    const dead = dpad.offsetWidth * 0.08;
     touch.left = dx < -dead; touch.right = dx > dead;
     dpad.classList.toggle('l', touch.left);
     dpad.classList.toggle('r', touch.right);
@@ -88,8 +97,8 @@ window.TM = window.TM || {};
   const NEAR = 10; // demi-largeur de la zone « sur la marmotte », en pixels du jeu
   let fingerId = null, finger = null, fingerStart = null, fingerLive = false, whistleFace = 0;
   function toGame(e) {
-    const r = cv.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / r.width * TM.VW, y: (e.clientY - r.top) / r.height * TM.VH };
+    const l = local(e, cv);
+    return { x: l.x * TM.VW, y: l.y * TM.VH };
   }
   function sideOf(pt) {
     if (!G) return 0;
@@ -143,8 +152,11 @@ window.TM = window.TM || {};
   let screen = 'title', G = null, demo = null, paused = false;
   let hintIdx = -1, hintTimer = 0, flashTimer = 0, winDelay = 0;
   const SCREENS = ['title', 'pause', 'coupez', 'win'];
+  let menuOpen = false;
   function show(name) {
     SCREENS.forEach(s => { $('scr-' + s).hidden = s !== name; });
+    menuOpen = !!name && name !== 'coupez';
+    app.classList.toggle('menu', menuOpen); // en paysage, la manette posée sur l'image cacherait les boutons du menu
   }
 
   function fmtTime(frames) {
@@ -174,15 +186,19 @@ window.TM = window.TM || {};
     syncToggles();
   }
   function syncToggles() {
+    const canFs = !!document.documentElement.requestFullscreen;
     document.querySelectorAll('[data-toggle]').forEach(b => {
       const k = b.dataset.toggle;
-      b.textContent = { sfx: 'Bruitages : ', music: 'Musique : ', buttons: 'Boutons : ' }[k] + (save[k] ? 'oui' : 'non');
-      b.setAttribute('aria-pressed', save[k] ? 'true' : 'false');
+      const on = k === 'fs' ? big : save[k];
+      b.textContent = { sfx: 'Bruitages : ', music: 'Musique : ', pad: 'Boutons : ', fs: 'Plein écran : ' }[k] + (on ? 'oui' : 'non');
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (k === 'fs') b.hidden = !(canFs || big); // iPhone tenu en paysage : il n'y a rien de plus grand à proposer
     });
   }
   document.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', () => {
     TM.audio.unlock();
     const k = b.dataset.toggle;
+    if (k === 'fs') { if (big) leaveBig(); else goBig(); return; }
     save[k] = !save[k];
     if (k === 'sfx') TM.audio.setSfx(save.sfx);
     else if (k === 'music') TM.audio.setMusic(save.music);
@@ -320,7 +336,7 @@ window.TM = window.TM || {};
       if (ev.type === 'hint') {
         if (ev.data !== hintIdx || $('hint').hidden) {
           hintIdx = ev.data;
-          const touchHint = layoutMode !== 'desk' && !save.buttons && G.L.def.hintsTouch && G.L.def.hintsTouch[ev.data];
+          const touchHint = layoutMode !== 'desk' && !save.pad && G.L.def.hintsTouch && G.L.def.hintsTouch[ev.data];
           $('hint-text').textContent = touchHint || G.L.def.hints[ev.data] || '';
           $('hint').hidden = false;
           hintTimer = 330;
@@ -339,14 +355,43 @@ window.TM = window.TM || {};
     if (screen === 'play') hud();
   }
 
+  // ---------- Plein écran à l'horizontale ----------
+  // Android : vrai plein écran, verrouillé en paysage. iPhone (ni l'un ni l'autre n'existe) ou verrouillage refusé :
+  // tant que le téléphone est tenu en portrait, la page est tournée d'un quart de tour, le jeu prend toute la longueur.
+  async function goBig() {
+    big = true;
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen && !document.fullscreenElement) { await el.requestFullscreen({ navigationUI: 'hide' }); fsOwned = true; }
+      if (document.fullscreenElement) await window.screen.orientation.lock('landscape');
+    } catch (e) { /* la page tournée fait l'affaire */ }
+    layout();
+  }
+  function leaveBig() {
+    big = false;
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => { /* pas grave */ });
+    layout();
+  }
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && fsOwned) { fsOwned = false; big = false; } // sorti par le geste « retour »
+    layout();
+  });
+  $('fs-port').addEventListener('click', () => { TM.audio.unlock(); goBig(); });
+
   // ---------- Mise en page ----------
   let layoutMode = 'desk';
   function layout() {
-    const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+    let vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
     const coarse = matchMedia('(any-pointer: coarse)').matches;
+    rotated = big && coarse && vh > vw;
+    if (rotated) [vw, vh] = [vh, vw];
+    app.style.cssText = rotated
+      ? 'position:fixed;left:0;top:0;width:' + vw + 'px;height:' + vh + 'px;transform-origin:0 0;transform:rotate(90deg) translateY(-100%)'
+      : '';
     const portrait = vh > vw * 1.05;
     const mode = layoutMode = !coarse ? 'desk' : portrait ? 'port' : 'land';
-    app.className = 'mode-' + mode + (save.buttons ? '' : ' nopad'); // sans boutons, on joue au doigt
+    app.className = 'mode-' + mode + (save.pad ? '' : ' nopad') + (rotated ? ' rot' : '') + (menuOpen ? ' menu' : ''); // sans boutons, on joue au doigt
+    syncToggles();
     let w;
     if (mode === 'port') {
       w = Math.min(vw - 28, (vh * 0.52) * 16 / 9);
