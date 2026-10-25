@@ -31,6 +31,7 @@
   color-scheme: dark;
 }
 html, body { height: 100%; margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } /* iPhone : pas de texte grossi à l'horizontale */
 [hidden] { display: none !important; }
 body {
   background: var(--room);
@@ -42,6 +43,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
 }
+.zoomed body, .zoomed #app, .zoomed #app * { touch-action: auto; } /* page zoomée malgré tout : le pincement la remet */
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 

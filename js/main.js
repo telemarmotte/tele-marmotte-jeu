@@ -145,8 +145,22 @@ window.TM = window.TM || {};
     return f;
   }
 
-  document.addEventListener('touchmove', e => { if (e.target.closest && e.target.closest('#app')) e.preventDefault(); }, { passive: false });
-  document.addEventListener('gesturestart', e => e.preventDefault());
+  // iPhone : Safari passe outre « user-scalable=no ». Deux touches rapprochées à côté d'un bouton zoomaient la page,
+  // et le pincement étant bloqué, on ne pouvait plus en revenir. La deuxième touche ne zoome plus (un bouton reçoit
+  // quand même son clic) ; si la page est zoomée malgré tout, pincement et double touche sont rendus pour la remettre.
+  const zoomed = () => !!window.visualViewport && visualViewport.scale > 1.02;
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => document.documentElement.classList.toggle('zoomed', zoomed()));
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = performance.now(), quick = now - lastTouchEnd < 400;
+    lastTouchEnd = now;
+    if (!quick || !e.cancelable || zoomed()) return;
+    e.preventDefault();
+    const b = e.target.closest && e.target.closest('button'), t = e.changedTouches[0];
+    if (b && !b.disabled && t && b.contains(document.elementFromPoint(t.clientX, t.clientY))) b.click();
+  }, { passive: false });
+  document.addEventListener('touchmove', e => { if (!zoomed() && e.target.closest && e.target.closest('#app')) e.preventDefault(); }, { passive: false });
+  document.addEventListener('gesturestart', e => { if (!zoomed()) e.preventDefault(); });
 
   // ---------- Écrans ----------
   let screen = 'title', G = null, demo = null, paused = false;
